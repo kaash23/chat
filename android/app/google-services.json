@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "493778498790",
+    "firebase_url": "https://chat-online-flutter-619eb.firebaseio.com",
+    "project_id": "chat-online-flutter-619eb",
+    "storage_bucket": "chat-online-flutter-619eb.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:493778498790:android:b4367fdf032e3e13563727",
+        "android_client_info": {
+          "package_name": "br.com.freitas.chat"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "493778498790-dsmk95uru6d3em88d5qq6s4nv8grlas9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "br.com.freitas.chat",
+            "certificate_hash": "9b163da6fee12c36de482264c7e9de9491a8e151"
+          }
+        },
+        {
+          "client_id": "493778498790-gnahr5n5ncvq7f063o1cn0uno1td5ctf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyALcDREc5SPcoAgEwmi63H6OQ39jrI4HrA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "493778498790-gnahr5n5ncvq7f063o1cn0uno1td5ctf.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
