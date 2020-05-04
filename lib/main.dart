@@ -1,6 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 
 
@@ -19,6 +21,9 @@ final ThemeData kDefaultTheme = ThemeData(
   primarySwatch: Colors.purple,
   accentColor: Colors.orangeAccent[400],
 );
+
+final googleSingIn = GoogleSignIn();
+final auth = FirebaseAuth.instance;
 
 class MyApp extends StatelessWidget {
   @override
@@ -52,6 +57,18 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
         body: Column(
           children: <Widget>[
+            Expanded(
+              child: ListView(
+                children: <Widget>[
+                  ChatMessage(),
+                  ChatMessage(),
+                  ChatMessage()
+                ],
+              ),
+            ),
+            Divider(
+              height: 1.0,
+            ),
             Container(
               decoration: BoxDecoration(
                 color: Theme.of(context).cardColor
@@ -72,28 +89,33 @@ class TextComposer extends StatefulWidget {
 
 class _TextComposerState extends State<TextComposer> {
 
- bool  _isComposing = false;
+  bool _isComposing = false;
 
   @override
   Widget build(BuildContext context) {
     return IconTheme(
-      data: IconThemeData(color: Theme.of(context).accentColor),
+      data: IconThemeData(color: Theme
+          .of(context)
+          .accentColor),
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 8.0),
-        decoration: Theme.of(context).platform == TargetPlatform.iOS ?
+        decoration: Theme
+            .of(context)
+            .platform == TargetPlatform.iOS ?
         BoxDecoration(
-          border: Border(top: BorderSide(color: Colors.grey[200]))
+            border: Border(top: BorderSide(color: Colors.grey[200]))
         ) : null,
-        child: Row (
+        child: Row(
           children: <Widget>[
             Container(
-              child: IconButton(icon: Icon(Icons.photo_camera) ,
-                onPressed: (){} ,)
+                child: IconButton(icon: Icon(Icons.photo_camera),
+                  onPressed: () {},)
             ),
             Expanded(
               child: TextField(
-                decoration: InputDecoration.collapsed(hintText: "Enviar uma Mensagem"),
-                onChanged: (text){
+                decoration: InputDecoration.collapsed(
+                    hintText: "Enviar uma Mensagem"),
+                onChanged: (text) {
                   setState(() {
                     _isComposing = text.length > 0;
                   });
@@ -101,14 +123,16 @@ class _TextComposerState extends State<TextComposer> {
               ),
             ),
             Container(
-              margin: const EdgeInsets.symmetric(horizontal: 4.0),
-              child: Theme.of(context).platform == TargetPlatform.iOS ?
-                  CupertinoButton(
-                    child: Text("Enviar"),
-                    onPressed: _isComposing ? () {} : null,
-                  ) :
-              IconButton(icon: Icon(Icons.send),
-                onPressed: _isComposing ? () {} : null,)
+                margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                child: Theme
+                    .of(context)
+                    .platform == TargetPlatform.iOS ?
+                CupertinoButton(
+                  child: Text("Enviar"),
+                  onPressed: _isComposing ? () {} : null,
+                ) :
+                IconButton(icon: Icon(Icons.send),
+                  onPressed: _isComposing ? () {} : null,)
             ),
           ],
         ),
@@ -117,3 +141,37 @@ class _TextComposerState extends State<TextComposer> {
   }
 }
 
+class ChatMessage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 10.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Container(
+            margin: EdgeInsets.only(right: 16.0),
+            child: CircleAvatar(
+              backgroundImage: NetworkImage("https://scontent-gru1-1.xx.fbcdn.net/v/t1.0-9/22688350_1584829164902439_2011451994789882922_n.jpg?_nc_cat=108&_nc_sid=a4a2d7&_nc_ohc=idi5RWmpx40AX-cycwe&_nc_ht=scontent-gru1-1.xx&oh=f2eee5fa8272aad027e7125dce63800d&oe=5ED583E0"),
+            ),
+          ),
+          Expanded (
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  "Gustavo",
+                  style: Theme.of(context).textTheme.subhead,
+                ),
+                Container(
+                  margin: EdgeInsets.only(top: 5.0),
+                  child: Text("teste"),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
