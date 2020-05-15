@@ -4,6 +4,20 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
+Future<FirebaseUser> _handleSignIn() async {
+  final GoogleSignInAccount googleUser = await _googleSingIn.signIn();
+  final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+  final AuthCredential credential = GoogleAuthProvider.getCredential(
+    accessToken: googleAuth.accessToken,
+    idToken: googleAuth.idToken,
+  );
+
+  final FirebaseUser user = (await _auth.signInWithCredential(credential)).user;
+  print("signed in " + user.displayName);
+  return user;
+}
+
 
 
 void main() async {
@@ -22,8 +36,35 @@ final ThemeData kDefaultTheme = ThemeData(
   accentColor: Colors.orangeAccent[400],
 );
 
-final googleSingIn = GoogleSignIn();
-final auth = FirebaseAuth.instance;
+final _googleSingIn = GoogleSignIn();
+final FirebaseAuth _auth = FirebaseAuth.instance;
+
+ _ensureLoggedIn() async{
+  GoogleSignInAccount user = _googleSingIn.currentUser;
+  if(user == null)
+    user = await _googleSingIn.signInSilently();
+  if(user == null)
+    user = await _googleSingIn.signIn();
+  if(await _auth.currentUser() == null){
+    _handleSignIn();
+  }
+}
+
+_handleSubmitted(String text) async {
+  await _ensureLoggedIn();
+  _sendMessage(text: text);
+}
+
+void _sendMessage({String text, String imgUrl}){
+  Firestore.instance.collection("messages").add(
+    {
+      "text" : text,
+      "imgUrl" : imgUrl,
+      "senderName" : _googleSingIn.currentUser.displayName,
+      "senderPhotoUrl" : _googleSingIn.currentUser.photoUrl
+    }
+  );
+}
 
 class MyApp extends StatelessWidget {
   @override
@@ -89,6 +130,7 @@ class TextComposer extends StatefulWidget {
 
 class _TextComposerState extends State<TextComposer> {
 
+  final _textController = TextEditingController();
   bool _isComposing = false;
 
   @override
@@ -113,12 +155,16 @@ class _TextComposerState extends State<TextComposer> {
             ),
             Expanded(
               child: TextField(
+                controller: _textController,
                 decoration: InputDecoration.collapsed(
                     hintText: "Enviar uma Mensagem"),
                 onChanged: (text) {
                   setState(() {
                     _isComposing = text.length > 0;
                   });
+                },
+                onSubmitted: (text){
+                  _handleSubmitted(text);
                 },
               ),
             ),
@@ -129,10 +175,14 @@ class _TextComposerState extends State<TextComposer> {
                     .platform == TargetPlatform.iOS ?
                 CupertinoButton(
                   child: Text("Enviar"),
-                  onPressed: _isComposing ? () {} : null,
+                  onPressed: _isComposing ? () {
+                    _handleSubmitted(_textController.text);
+                  } : null,
                 ) :
                 IconButton(icon: Icon(Icons.send),
-                  onPressed: _isComposing ? () {} : null,)
+                  onPressed: _isComposing ? () {
+                    _handleSubmitted(_textController.text);
+                  } : null,)
             ),
           ],
         ),
@@ -140,6 +190,7 @@ class _TextComposerState extends State<TextComposer> {
     );
   }
 }
+
 
 class ChatMessage extends StatelessWidget {
   @override
@@ -175,3 +226,4 @@ class ChatMessage extends StatelessWidget {
     );
   }
 }
+
