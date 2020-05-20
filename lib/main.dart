@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
+dynamic date;
+
 Future<FirebaseUser> _handleSignIn() async {
   final GoogleSignInAccount googleUser = await _googleSingIn.signIn();
   final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
@@ -56,12 +58,14 @@ _handleSubmitted(String text) async {
 }
 
 void _sendMessage({String text, String imgUrl}){
+
   Firestore.instance.collection("messages").add(
     {
       "text" : text,
       "imgUrl" : imgUrl,
       "senderName" : _googleSingIn.currentUser.displayName,
-      "senderPhotoUrl" : _googleSingIn.currentUser.photoUrl
+      "senderPhotoUrl" : _googleSingIn.currentUser.photoUrl,
+      "sendDate" : date.toString()
     }
   );
 }
@@ -84,6 +88,7 @@ class ChatScreen extends StatefulWidget {
   _ChatScreenState createState() => _ChatScreenState();
 }
 
+
 class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
@@ -100,7 +105,7 @@ class _ChatScreenState extends State<ChatScreen> {
           children: <Widget>[
             Expanded(
               child: StreamBuilder(
-                stream: Firestore.instance.collection("messages").snapshots(),
+                stream: Firestore.instance.collection("messages").orderBy("sendDate").snapshots(),
                 builder: (context, snapshot){
                   switch ( snapshot.connectionState ){
                     case ConnectionState.none:
@@ -182,6 +187,7 @@ class _TextComposerState extends State<TextComposer> {
                 onSubmitted: (text){
                   _handleSubmitted(_textController.text);
                   _reset();
+                  date = DateTime.now();
                 },
                 onChanged: (text) {
                   setState(() {
@@ -200,12 +206,16 @@ class _TextComposerState extends State<TextComposer> {
                   onPressed: _isComposing ? () {
                     _handleSubmitted(_textController.text);
                     _reset();
+                    date = DateTime.now();
                   } : null,
                 ) :
                 IconButton(icon: Icon(Icons.send),
                   onPressed: _isComposing ? () {
                     _handleSubmitted(_textController.text);
                     _reset();
+                    date = DateTime.now();
+                    //mudar o metodo para que seja exibido a hora simplificada
+                    //no app
                   } : null,
                 )
             ),
@@ -240,9 +250,19 @@ class ChatMessage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(
-                  data["senderName"],
-                  style: Theme.of(context).textTheme.subhead,
+                Row(
+                  children: <Widget>[
+                    Text(
+                      data["senderName"],
+                      style: Theme.of(context).textTheme.subhead,
+                    ),
+                    /*Text(
+                      data["sendDate"],
+                      style: Theme.of(context).textTheme.subhead,
+
+                    )*/
+                    //METODO JA IMPLEMENTADO PARA EXIBIR A DATA E HORA DA MSG
+                  ],
                 ),
                 Container(
                   margin: EdgeInsets.only(top: 5.0),
