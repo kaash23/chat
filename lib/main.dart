@@ -99,12 +99,26 @@ class _ChatScreenState extends State<ChatScreen> {
         body: Column(
           children: <Widget>[
             Expanded(
-              child: ListView(
-                children: <Widget>[
-                  ChatMessage(),
-                  ChatMessage(),
-                  ChatMessage()
-                ],
+              child: StreamBuilder(
+                stream: Firestore.instance.collection("messages").snapshots(),
+                builder: (context, snapshot){
+                  switch ( snapshot.connectionState ){
+                    case ConnectionState.none:
+                    case ConnectionState.waiting:
+                      return Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    default:
+                      return ListView.builder(
+                        reverse: true,
+                        itemCount: snapshot.data.documents.length,
+                        itemBuilder: (context, index){
+                          List r = snapshot.data.documents.reversed.toList();
+                          return ChatMessage(r[index].data);
+                        },
+                      );
+                  }
+                }
               ),
             ),
             Divider(
@@ -122,7 +136,7 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 }
-
+//Campo de digitação de mensagem
 class TextComposer extends StatefulWidget {
   @override
   _TextComposerState createState() => _TextComposerState();
@@ -132,6 +146,13 @@ class _TextComposerState extends State<TextComposer> {
 
   final _textController = TextEditingController();
   bool _isComposing = false;
+
+  void _reset(){
+    _textController.clear();
+    setState(() {
+      _isComposing = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -158,13 +179,14 @@ class _TextComposerState extends State<TextComposer> {
                 controller: _textController,
                 decoration: InputDecoration.collapsed(
                     hintText: "Enviar uma Mensagem"),
+                onSubmitted: (text){
+                  _handleSubmitted(_textController.text);
+                  _reset();
+                },
                 onChanged: (text) {
                   setState(() {
                     _isComposing = text.length > 0;
                   });
-                },
-                onSubmitted: (text){
-                  _handleSubmitted(text);
                 },
               ),
             ),
@@ -177,12 +199,15 @@ class _TextComposerState extends State<TextComposer> {
                   child: Text("Enviar"),
                   onPressed: _isComposing ? () {
                     _handleSubmitted(_textController.text);
+                    _reset();
                   } : null,
                 ) :
                 IconButton(icon: Icon(Icons.send),
                   onPressed: _isComposing ? () {
                     _handleSubmitted(_textController.text);
-                  } : null,)
+                    _reset();
+                  } : null,
+                )
             ),
           ],
         ),
@@ -193,6 +218,11 @@ class _TextComposerState extends State<TextComposer> {
 
 
 class ChatMessage extends StatelessWidget {
+
+   final Map<String, dynamic> data;
+
+   ChatMessage(this.data);
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -203,7 +233,7 @@ class ChatMessage extends StatelessWidget {
           Container(
             margin: EdgeInsets.only(right: 16.0),
             child: CircleAvatar(
-              backgroundImage: NetworkImage("https://scontent-gru1-1.xx.fbcdn.net/v/t1.0-9/22688350_1584829164902439_2011451994789882922_n.jpg?_nc_cat=108&_nc_sid=a4a2d7&_nc_ohc=idi5RWmpx40AX-cycwe&_nc_ht=scontent-gru1-1.xx&oh=f2eee5fa8272aad027e7125dce63800d&oe=5ED583E0"),
+              backgroundImage: NetworkImage(data["senderPhotoUrl"]),
             ),
           ),
           Expanded (
@@ -211,12 +241,14 @@ class ChatMessage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(
-                  "Gustavo",
+                  data["senderName"],
                   style: Theme.of(context).textTheme.subhead,
                 ),
                 Container(
                   margin: EdgeInsets.only(top: 5.0),
-                  child: Text("teste"),
+                  child: data["imgUrl"] != null ?
+                    Image.network(data["imgURL"], width: 250.0) :
+                    Text(data["text"]),
                 ),
               ],
             ),
