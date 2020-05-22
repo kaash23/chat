@@ -3,8 +3,12 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:intl/intl.dart';
+
 
 dynamic date;
+
+
 
 Future<FirebaseUser> _handleSignIn() async {
   final GoogleSignInAccount googleUser = await _googleSingIn.signIn();
@@ -52,10 +56,7 @@ final FirebaseAuth _auth = FirebaseAuth.instance;
   }
 }
 
-_handleSubmitted(String text) async {
-  await _ensureLoggedIn();
-  _sendMessage(text: text);
-}
+
 
 void _sendMessage({String text, String imgUrl}){
 
@@ -68,6 +69,12 @@ void _sendMessage({String text, String imgUrl}){
       "sendDate" : date.toString()
     }
   );
+}
+
+_handleSubmitted(String text) async {
+  await _ensureLoggedIn();
+  _sendMessage(text: text);
+  date = DateFormat.jms().format(DateTime.now());
 }
 
 class MyApp extends StatelessWidget {
@@ -187,7 +194,6 @@ class _TextComposerState extends State<TextComposer> {
                 onSubmitted: (text){
                   _handleSubmitted(_textController.text);
                   _reset();
-                  date = DateTime.now();
                 },
                 onChanged: (text) {
                   setState(() {
@@ -206,14 +212,12 @@ class _TextComposerState extends State<TextComposer> {
                   onPressed: _isComposing ? () {
                     _handleSubmitted(_textController.text);
                     _reset();
-                    date = DateTime.now();
                   } : null,
                 ) :
                 IconButton(icon: Icon(Icons.send),
                   onPressed: _isComposing ? () {
                     _handleSubmitted(_textController.text);
                     _reset();
-                    date = DateTime.now();
                     //mudar o metodo para que seja exibido a hora simplificada
                     //no app
                   } : null,
@@ -256,11 +260,16 @@ class ChatMessage extends StatelessWidget {
                       data["senderName"],
                       style: Theme.of(context).textTheme.subhead,
                     ),
-                    /*Text(
-                      data["sendDate"],
-                      style: Theme.of(context).textTheme.subhead,
+                    Container(
+                      child: Padding(
+                        padding: EdgeInsets.only(left: 150.0),
+                        child: Text(
+                          data["sendDate"],
+                          style: TextStyle(fontSize: 10.0, color: Colors.grey),
 
-                    )*/
+                        ),
+                      ),
+                    )
                     //METODO JA IMPLEMENTADO PARA EXIBIR A DATA E HORA DA MSG
                   ],
                 ),
