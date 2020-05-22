@@ -3,6 +3,26 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:intl/intl.dart';
+
+
+dynamic date;
+
+
+
+Future<FirebaseUser> _handleSignIn() async {
+  final GoogleSignInAccount googleUser = await _googleSingIn.signIn();
+  final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+  final AuthCredential credential = GoogleAuthProvider.getCredential(
+    accessToken: googleAuth.accessToken,
+    idToken: googleAuth.idToken,
+  );
+
+  final FirebaseUser user = (await _auth.signInWithCredential(credential)).user;
+  print("signed in " + user.displayName);
+  return user;
+}
 
 
 
@@ -22,8 +42,40 @@ final ThemeData kDefaultTheme = ThemeData(
   accentColor: Colors.orangeAccent[400],
 );
 
-final googleSingIn = GoogleSignIn();
-final auth = FirebaseAuth.instance;
+final _googleSingIn = GoogleSignIn();
+final FirebaseAuth _auth = FirebaseAuth.instance;
+
+ _ensureLoggedIn() async{
+  GoogleSignInAccount user = _googleSingIn.currentUser;
+  if(user == null)
+    user = await _googleSingIn.signInSilently();
+  if(user == null)
+    user = await _googleSingIn.signIn();
+  if(await _auth.currentUser() == null){
+    _handleSignIn();
+  }
+}
+
+
+
+void _sendMessage({String text, String imgUrl}){
+
+  Firestore.instance.collection("messages").add(
+    {
+      "text" : text,
+      "imgUrl" : imgUrl,
+      "senderName" : _googleSingIn.currentUser.displayName,
+      "senderPhotoUrl" : _googleSingIn.currentUser.photoUrl,
+      "sendDate" : date.toString()
+    }
+  );
+}
+
+_handleSubmitted(String text) async {
+  await _ensureLoggedIn();
+  _sendMessage(text: text);
+  date = DateFormat.jms().format(DateTime.now());
+}
 
 class MyApp extends StatelessWidget {
   @override
@@ -43,6 +95,7 @@ class ChatScreen extends StatefulWidget {
   _ChatScreenState createState() => _ChatScreenState();
 }
 
+
 class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
@@ -58,12 +111,26 @@ class _ChatScreenState extends State<ChatScreen> {
         body: Column(
           children: <Widget>[
             Expanded(
-              child: ListView(
-                children: <Widget>[
-                  ChatMessage(),
-                  ChatMessage(),
-                  ChatMessage()
-                ],
+              child: StreamBuilder(
+                stream: Firestore.instance.collection("messages").orderBy("sendDate").snapshots(),
+                builder: (context, snapshot){
+                  switch ( snapshot.connectionState ){
+                    case ConnectionState.none:
+                    case ConnectionState.waiting:
+                      return Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    default:
+                      return ListView.builder(
+                        reverse: true,
+                        itemCount: snapshot.data.documents.length,
+                        itemBuilder: (context, index){
+                          List r = snapshot.data.documents.reversed.toList();
+                          return ChatMessage(r[index].data);
+                        },
+                      );
+                  }
+                }
               ),
             ),
             Divider(
@@ -81,7 +148,7 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 }
-
+//Campo de digitação de mensagem
 class TextComposer extends StatefulWidget {
   @override
   _TextComposerState createState() => _TextComposerState();
@@ -89,7 +156,15 @@ class TextComposer extends StatefulWidget {
 
 class _TextComposerState extends State<TextComposer> {
 
+  final _textController = TextEditingController();
   bool _isComposing = false;
+
+  void _reset(){
+    _textController.clear();
+    setState(() {
+      _isComposing = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -113,8 +188,13 @@ class _TextComposerState extends State<TextComposer> {
             ),
             Expanded(
               child: TextField(
+                controller: _textController,
                 decoration: InputDecoration.collapsed(
                     hintText: "Enviar uma Mensagem"),
+                onSubmitted: (text){
+                  _handleSubmitted(_textController.text);
+                  _reset();
+                },
                 onChanged: (text) {
                   setState(() {
                     _isComposing = text.length > 0;
@@ -129,10 +209,19 @@ class _TextComposerState extends State<TextComposer> {
                     .platform == TargetPlatform.iOS ?
                 CupertinoButton(
                   child: Text("Enviar"),
-                  onPressed: _isComposing ? () {} : null,
+                  onPressed: _isComposing ? () {
+                    _handleSubmitted(_textController.text);
+                    _reset();
+                  } : null,
                 ) :
                 IconButton(icon: Icon(Icons.send),
-                  onPressed: _isComposing ? () {} : null,)
+                  onPressed: _isComposing ? () {
+                    _handleSubmitted(_textController.text);
+                    _reset();
+                    //mudar o metodo para que seja exibido a hora simplificada
+                    //no app
+                  } : null,
+                )
             ),
           ],
         ),
@@ -141,7 +230,13 @@ class _TextComposerState extends State<TextComposer> {
   }
 }
 
+
 class ChatMessage extends StatelessWidget {
+
+   final Map<String, dynamic> data;
+
+   ChatMessage(this.data);
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -152,20 +247,37 @@ class ChatMessage extends StatelessWidget {
           Container(
             margin: EdgeInsets.only(right: 16.0),
             child: CircleAvatar(
-              backgroundImage: NetworkImage("https://scontent-gru1-1.xx.fbcdn.net/v/t1.0-9/22688350_1584829164902439_2011451994789882922_n.jpg?_nc_cat=108&_nc_sid=a4a2d7&_nc_ohc=idi5RWmpx40AX-cycwe&_nc_ht=scontent-gru1-1.xx&oh=f2eee5fa8272aad027e7125dce63800d&oe=5ED583E0"),
+              backgroundImage: NetworkImage(data["senderPhotoUrl"]),
             ),
           ),
           Expanded (
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(
-                  "Gustavo",
-                  style: Theme.of(context).textTheme.subhead,
+                Row(
+                  children: <Widget>[
+                    Text(
+                      data["senderName"],
+                      style: Theme.of(context).textTheme.subhead,
+                    ),
+                    Container(
+                      child: Padding(
+                        padding: EdgeInsets.only(left: 150.0),
+                        child: Text(
+                          data["sendDate"],
+                          style: TextStyle(fontSize: 10.0, color: Colors.grey),
+
+                        ),
+                      ),
+                    )
+                    //METODO JA IMPLEMENTADO PARA EXIBIR A DATA E HORA DA MSG
+                  ],
                 ),
                 Container(
                   margin: EdgeInsets.only(top: 5.0),
-                  child: Text("teste"),
+                  child: data["imgUrl"] != null ?
+                    Image.network(data["imgURL"], width: 250.0) :
+                    Text(data["text"]),
                 ),
               ],
             ),
@@ -175,3 +287,4 @@ class ChatMessage extends StatelessWidget {
     );
   }
 }
+
