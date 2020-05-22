@@ -218,7 +218,6 @@ class _TextComposerState extends State<TextComposer> {
                   onPressed: _isComposing ? () {
                     _handleSubmitted(_textController.text);
                     _reset();
-                    //mudar o metodo para que seja exibido a hora simplificada
                     //no app
                   } : null,
                 )
@@ -266,7 +265,6 @@ class ChatMessage extends StatelessWidget {
                         child: Text(
                           data["sendDate"],
                           style: TextStyle(fontSize: 10.0, color: Colors.grey),
-
                         ),
                       ),
                     )
