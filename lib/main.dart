@@ -6,7 +6,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:intl/intl.dart';
 
 
-dynamic date;
+DateTime date;
 
 
 
@@ -66,15 +66,19 @@ void _sendMessage({String text, String imgUrl}){
       "imgUrl" : imgUrl,
       "senderName" : _googleSingIn.currentUser.displayName,
       "senderPhotoUrl" : _googleSingIn.currentUser.photoUrl,
-      "sendDate" : date.toString()
+      "sendDate" : date,
     }
   );
 }
 
+
+
 _handleSubmitted(String text) async {
   await _ensureLoggedIn();
   _sendMessage(text: text);
-  date = DateFormat.jms().format(DateTime.now());
+  date = DateTime.now();
+  //date = DateFormat.jms().format(DateTime.now());
+  //date = DateTime.now().toString();
 }
 
 class MyApp extends StatelessWidget {
@@ -159,6 +163,7 @@ class _TextComposerState extends State<TextComposer> {
   final _textController = TextEditingController();
   bool _isComposing = false;
 
+
   void _reset(){
     _textController.clear();
     setState(() {
@@ -236,6 +241,11 @@ class ChatMessage extends StatelessWidget {
 
    ChatMessage(this.data);
 
+dynamic _teste (dynamic context){
+  context = data["sendDate"].toDate();
+  return context;
+}
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -261,9 +271,9 @@ class ChatMessage extends StatelessWidget {
                     ),
                     Container(
                       child: Padding(
-                        padding: EdgeInsets.only(left: 150.0),
+                        padding: EdgeInsets.only(left: 120.0),
                         child: Text(
-                          data["sendDate"],
+                          DateFormat('d/M/y').add_Hm().format(data["sendDate"].toDate()),
                           style: TextStyle(fontSize: 10.0, color: Colors.grey),
                         ),
                       ),
