@@ -241,10 +241,6 @@ class ChatMessage extends StatelessWidget {
 
    ChatMessage(this.data);
 
-dynamic _teste (dynamic context){
-  context = data["sendDate"].toDate();
-  return context;
-}
 
   @override
   Widget build(BuildContext context) {
