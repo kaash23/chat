@@ -1,10 +1,13 @@
+//import 'dart:html';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-
+import 'dart:io';
 
 DateTime date;
 
@@ -58,7 +61,10 @@ final FirebaseAuth _auth = FirebaseAuth.instance;
 
 
 
-void _sendMessage({String text, String imgUrl}){
+void _sendMessage({String text, String imgUrl, var date}){
+  if (date == null) {
+    date = DateFormat('d/M/y').add_Hm().format(date["sendDate"].toDate());
+  }
 
   Firestore.instance.collection("messages").add(
     {
@@ -73,10 +79,11 @@ void _sendMessage({String text, String imgUrl}){
 
 
 
-_handleSubmitted(String text) async {
+_handleSubmitted(String text, var date) async {
   await _ensureLoggedIn();
-  _sendMessage(text: text);
   date = DateTime.now();
+  _sendMessage(text: text, date: date);
+  //date = DateTime.now();
   //date = DateFormat.jms().format(DateTime.now());
   //date = DateTime.now().toString();
 }
@@ -171,6 +178,18 @@ class _TextComposerState extends State<TextComposer> {
     });
   }
 
+
+  /*File imgFile;
+  final picker = ImagePicker();
+
+  Future getImage() async {
+    final pickedFile = await picker.getImage(source: ImageSource.camera);
+
+    setState(() {
+      imgFile = File(pickedFile.path);
+    });
+  }*/
+
   @override
   Widget build(BuildContext context) {
     return IconTheme(
@@ -189,7 +208,16 @@ class _TextComposerState extends State<TextComposer> {
           children: <Widget>[
             Container(
                 child: IconButton(icon: Icon(Icons.photo_camera),
-                  onPressed: () {},)
+                  onPressed: () async {
+                    await _ensureLoggedIn();
+                    File imgFile = await ImagePicker.pickImage(source: ImageSource.camera);
+                    if (imgFile == null) return;
+                    StorageUploadTask task = FirebaseStorage.instance.ref().
+                    child(_googleSingIn.currentUser.id.toString() + DateTime.now().millisecondsSinceEpoch.toString()).
+                    putFile(imgFile);
+                    StorageTaskSnapshot url = (await task.onComplete).ref.getDownloadURL();
+                    _sendMessage(imgUrl: url, date: DateTime.now().toString());
+                  },)
             ),
             Expanded(
               child: TextField(
@@ -197,7 +225,7 @@ class _TextComposerState extends State<TextComposer> {
                 decoration: InputDecoration.collapsed(
                     hintText: "Enviar uma Mensagem"),
                 onSubmitted: (text){
-                  _handleSubmitted(_textController.text);
+                  _handleSubmitted(_textController.text, date);
                   _reset();
                 },
                 onChanged: (text) {
@@ -215,13 +243,13 @@ class _TextComposerState extends State<TextComposer> {
                 CupertinoButton(
                   child: Text("Enviar"),
                   onPressed: _isComposing ? () {
-                    _handleSubmitted(_textController.text);
+                    _handleSubmitted(_textController.text, date);
                     _reset();
                   } : null,
                 ) :
                 IconButton(icon: Icon(Icons.send),
                   onPressed: _isComposing ? () {
-                    _handleSubmitted(_textController.text);
+                    _handleSubmitted(_textController.text, date);
                     _reset();
                     //no app
                   } : null,
