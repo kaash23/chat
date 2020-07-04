@@ -215,8 +215,10 @@ class _TextComposerState extends State<TextComposer> {
                     StorageUploadTask task = FirebaseStorage.instance.ref().
                     child(_googleSingIn.currentUser.id.toString() + DateTime.now().millisecondsSinceEpoch.toString()).
                     putFile(imgFile);
-                    StorageTaskSnapshot url = (await task.onComplete).ref.getDownloadURL();
-                    _sendMessage(imgUrl: url, date: DateTime.now().toString());
+                    final StorageTaskSnapshot downloadUrl = (await task.onComplete);
+                    final String url = (await downloadUrl.ref.getDownloadURL());
+                    print(url);
+                    _sendMessage(imgUrl: url, date: DateTime.now());
                   },)
             ),
             Expanded(
@@ -308,7 +310,7 @@ class ChatMessage extends StatelessWidget {
                 Container(
                   margin: EdgeInsets.only(top: 5.0),
                   child: data["imgUrl"] != null ?
-                    Image.network(data["imgURL"], width: 250.0) :
+                    Image.network(data["imgUrl"].toString(), width: 250.0) :
                     Text(data["text"]),
                 ),
               ],
